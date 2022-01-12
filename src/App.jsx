@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import apiService from "./services/apiService";
 import { Wrapper } from "./App.styled";
@@ -9,61 +9,55 @@ import Loader from "./Components/Loader/Loader";
 import Modal from "./Components/Modal/Modal";
 import ErrorView from "./Components/ErrorView/ErrorView";
 
-export default class App extends Component {
-	state = {
-		query: "",
-		images: [],
-		largeImageURL: "",
-		page: "",
-		error: null,
-		isLoading: false,
-		showModal: false,
+export default function App() {
+	const [query, setQuery] = useState("");
+	const [images, setImages] = useState([]);
+	const [largeImageURL, setLargeImageURL] = useState("");
+	const [page, setPage] = useState(1);
+	const [error, setError] = useState(null);
+	const [isLoading, setIsLoading] = useState(false);
+	const [showModal, setShowModal] = useState(false);
+
+	const handleFormSubmit = (query) => {
+		setQuery(query);
+		setImages([]);
+		setPage(1);
+		setError(null);
 	};
-	handleFormSubmit = (query) => {
-		this.setState({ query, images: [], page: 1, error: null });
-	};
-	async componentDidUpdate(_, prevState) {
-		if (prevState.query !== this.state.query) {
-			this.searchImages();
+
+	useEffect(() => {
+		if (!query) {
+			return;
 		}
-	}
-	searchImages = async () => {
-		const { query, page } = this.state;
-		this.toggleLoader();
-		try {
-			const response = await apiService(query, page);
-			this.setState(({ images, page }) => ({
-				images: [...images, ...response],
-				page: page + 1,
-			}));
-			if (response.length === 0) {
-				this.setState({ error: `No results for ${query}!` });
+		const searchImages = async () => {
+			setIsLoading(true);
+			try {
+				const response = await apiService(query, page);
+				setImages((prevImages) => [...prevImages, ...response]);
+				if (response.length === 0) {
+					setError(`No results for ${query}!`);
+				}
+			} catch (error) {
+				setError("Something went wrong. Try again.");
+			} finally {
+				setIsLoading(false);
 			}
-		} catch (error) {
-			this.setState({ error: "Something went wrong. Try again." });
-		} finally {
-			this.toggleLoader();
-		}
+		};
+		searchImages();
+	}, [page, query]);
+
+	const onLoadMore = () => {
+		setPage((prevPage) => prevPage + 1);
+		scrollPage();
 	};
-	onLoadMore = () => {
-		this.searchImages();
-		this.scrollPage();
+	const onOpenModal = (e) => {
+		setLargeImageURL(e.target.dataset.source);
+		toggleModal();
 	};
-	onOpenModal = (e) => {
-		this.setState({ largeImageURL: e.target.dataset.source });
-		this.toggleModal();
+	const toggleModal = () => {
+		setShowModal((prevModal) => !prevModal);
 	};
-	toggleLoader = () => {
-		this.setState(({ isLoading }) => ({
-			isLoading: !isLoading,
-		}));
-	};
-	toggleModal = () => {
-		this.setState(({ showModal }) => ({
-			showModal: !showModal,
-		}));
-	};
-	scrollPage = () => {
+	const scrollPage = () => {
 		setTimeout(() => {
 			window.scrollBy({
 				top: document.documentElement.clientHeight - 150,
@@ -71,27 +65,22 @@ export default class App extends Component {
 			});
 		}, 1000);
 	};
-	render() {
-		const { images, largeImageURL, isLoading, showModal, error } = this.state;
-		return (
-			<Wrapper>
-				<Searchbar onSubmit={this.handleFormSubmit} />
-				<Toaster />
-				{error && <ErrorView texterror={error} />}
-				{images.length > 0 && !error && (
-					<ImageGallery images={images} onOpenModal={this.onOpenModal} />
-				)}
-				{isLoading && <Loader />}
-				{!isLoading && images.length >= 12 && !error && (
-					<Button onLoadMore={this.onLoadMore} />
-				)}
-				{showModal && (
-					<Modal
-						onToggleModal={this.toggleModal}
-						largeImageURL={largeImageURL}
-					/>
-				)}
-			</Wrapper>
-		);
-	}
+	const showLoadMoreButtonAndErrorText =
+		!isLoading && images.length >= 12 && !error;
+	const showErrorText = images.length > 0 && !error;
+	return (
+		<Wrapper>
+			<Searchbar onSubmit={handleFormSubmit} />
+			<Toaster />
+			{error && <ErrorView texterror={error} />}
+			{showErrorText && (
+				<ImageGallery images={images} onOpenModal={onOpenModal} />
+			)}
+			{isLoading && <Loader />}
+			{showLoadMoreButtonAndErrorText && <Button onLoadMore={onLoadMore} />}
+			{showModal && (
+				<Modal onToggleModal={toggleModal} largeImageURL={largeImageURL} />
+			)}
+		</Wrapper>
+	);
 }
