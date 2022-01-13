@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import apiService from "./services/apiService";
 import { Wrapper } from "./App.styled";
-import Searchbar from "./Components/Searchbar/Searchbar";
-import ImageGallery from "./Components/ImageGallery/ImageGallery";
-import Button from "./Components/Button/Button";
-import Loader from "./Components/Loader/Loader";
-import Modal from "./Components/Modal/Modal";
-import ErrorView from "./Components/ErrorView/ErrorView";
+import Searchbar from "./components/Searchbar/Searchbar";
+import ImageGallery from "./components/ImageGallery/ImageGallery";
+import Button from "./components/Button/Button";
+import Loader from "./components/Loader/Loader";
+import Modal from "./components/Modal/Modal";
+import ErrorView from "./components/ErrorView/ErrorView";
 
 export default function App() {
 	const [query, setQuery] = useState("");
